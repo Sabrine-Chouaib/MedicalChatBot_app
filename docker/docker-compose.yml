@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: pgvector-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medical
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d
