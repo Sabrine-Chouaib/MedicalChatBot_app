@@ -2,127 +2,51 @@ package com.example.medical_chatbot.rag.vectorstore;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
 
-@Component
+/**
+ * PineconeStore : wrapper simple autour de PineconeClient
+ * Fournit uniquement la méthode query pour récupérer les topK vecteurs depuis Pinecone
+ */
 public class PineconeStore {
 
-    private final HttpClient httpClient;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final PineconeClient client;
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    // 🔥 valeurs runtime (tests ou overrides)
-    private String apiKey;
-    private String host;
-
-    // 🔹 valeurs Spring (prod)
-    @Value("${pinecone.api.key:}")
-    private String pineconeApiKey;
-
-    @Value("${pinecone.host:}")
-    private String pineconeHost;
-
-    @Value("${pinecone.index.name:}")
-    private String pineconeIndexName; // (optionnel, pas utilisé dans l’URL)
-
-    public PineconeStore(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    public PineconeStore(String apiKey, String host) {
+        this.client = new PineconeClient(apiKey, host);
     }
 
-    /* ==========================
-       SETTERS (tests / non-Spring)
-       ========================== */
+    /**
+     * Query Pinecone pour récupérer topK vecteurs similaires
+     */
+    public JsonNode query(double[] vector, int topK) throws IOException {
+        String url = client.getHost() + "/query";
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public void setIndexName(String indexName) {
-        this.pineconeIndexName = indexName;
-    }
-
-    /* ==========================
-       RESOLUTION DES VALEURS
-       ========================== */
-
-    private String resolvedHost() {
-        String h = (host != null && !host.isBlank()) ? host : pineconeHost;
-        if (h == null || !h.startsWith("http")) {
-            throw new IllegalStateException(
-                "Pinecone host invalide (doit commencer par https://)"
-            );
+        var payloadNode = mapper.createObjectNode();
+        payloadNode.put("topK", topK);
+        var vectorArray = payloadNode.putArray("vector");
+        for (double v : vector) {
+            vectorArray.add(v);
         }
-        return h;
+
+        try (var httpClient = org.apache.hc.client5.http.impl.classic.HttpClients.createDefault()) {
+            var post = new org.apache.hc.client5.http.classic.methods.HttpPost(url);
+            post.setHeader("Content-Type", "application/json");
+            post.setHeader("Api-Key", client.getApiKey());
+            post.setEntity(new org.apache.hc.core5.http.io.entity.StringEntity(payloadNode.toString()));
+
+            return httpClient.execute(post, response -> {
+                int status = response.getCode();
+                String responseBody = new String(response.getEntity().getContent().readAllBytes());
+                if (status != 200) {
+                    throw new RuntimeException("Pinecone query error: " + status + "\n" + responseBody);
+                }
+                return mapper.readTree(responseBody);
+            });
+        }
     }
 
-    private String resolvedApiKey() {
-        return (apiKey != null && !apiKey.isBlank()) ? apiKey : pineconeApiKey;
-    }
-
-    /* ==========================
-       UPSERT
-       ========================== */
-
-    public boolean upsert(List<Map<String, Object>> vectors) throws Exception {
-
-        String url = resolvedHost() + "/vectors/upsert";
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("vectors", vectors);
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Api-Key", resolvedApiKey())
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        mapper.writeValueAsString(body)))
-                .build();
-
-        HttpResponse<String> response =
-                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        System.out.println("Pinecone UPSERT status = " + response.statusCode());
-        System.out.println(response.body());
-
-        return response.statusCode() >= 200 && response.statusCode() < 300;
-    }
-
-    /* ==========================
-       QUERY
-       ========================== */
-
-    public JsonNode query(double[] vector, int topK) throws Exception {
-
-        String url = resolvedHost() + "/query";
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("vector", vector);
-        body.put("topK", topK);
-        body.put("includeMetadata", true);
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Api-Key", resolvedApiKey())
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        mapper.writeValueAsString(body)))
-                .build();
-
-        HttpResponse<String> response =
-                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        return mapper.readTree(response.body());
-    }
+   
 }
