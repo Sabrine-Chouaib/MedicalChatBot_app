@@ -1,8 +1,8 @@
 package com.example.medical_chatbot.service;
 
-import com.example.medical_chatbot.rag.vectorstore.PineconeStore;
-import com.example.medical_chatbot.rag.prompt.SystemPrompt;
 import com.example.medical_chatbot.rag.embeddings.MedicalEmbeddingsPipeline;
+import com.example.medical_chatbot.rag.prompt.SystemPrompt;
+import com.example.medical_chatbot.rag.vectorstore.PineconeStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -14,7 +14,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service RAG avec LLM (Ollama)
+ *
+ * Responsabilités :
+ *  - Générer l'embedding de la question
+ *  - Interroger Pinecone (similarité vectorielle)
+ *  - Construire le prompt final
+ *  - Appeler Ollama (stream:false)
+ */
 public class RagServiceLLM {
+
+    /* =====================================================
+       🔧 DÉPENDANCES
+       ===================================================== */
 
     private final PineconeStore pineconeStore;
     private final SystemPrompt systemPrompt;
@@ -22,90 +35,130 @@ public class RagServiceLLM {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public RagServiceLLM(
-            PineconeStore pineconeStore,
-            SystemPrompt systemPrompt
-    ) {
+
+    /* =====================================================
+       🏗️ CONSTRUCTEUR
+       ===================================================== */
+
+    public RagServiceLLM(PineconeStore pineconeStore,
+                         SystemPrompt systemPrompt) {
         this.pineconeStore = pineconeStore;
         this.systemPrompt = systemPrompt;
     }
 
+
+    /* =====================================================
+       🧠 MÉTHODE PRINCIPALE
+       ===================================================== */
+
     /**
- * Recherche dans Pinecone + génération de réponse LLM Ollama
- * Adaptée pour Ollama API avec stream:false
- */
-public String generateAnswerWithLLM(String question, int topK) throws Exception {
+     * Pipeline RAG complet :
+     *  1. Embedding question
+     *  2. Recherche Pinecone
+     *  3. Construction du contexte
+     *  4. Prompt final
+     *  5. Appel Ollama
+     *
+     * @param question question utilisateur
+     * @param topK     nombre de chunks à récupérer
+     * @return réponse générée par le LLM
+     */
+    public String generateAnswerWithLLM(String question, int topK) throws Exception {
 
-    // 1️⃣ Génération embedding pour la question
-    List<Map<String, Object>> embeddings = MedicalEmbeddingsPipeline.generateEmbeddings(
-            List.of(question), "question"
-    );
-    @SuppressWarnings("unchecked")
-    double[] vector = ((List<Double>) embeddings.get(0).get("values"))
-            .stream().mapToDouble(Double::doubleValue).toArray();
+        /* =============================
+           1️⃣ EMBEDDING DE LA QUESTION
+           ============================= */
 
-    // 2️⃣ Recherche dans Pinecone
-    JsonNode searchResult = pineconeStore.query(vector, topK);
+        List<Map<String, Object>> embeddings =
+                MedicalEmbeddingsPipeline.generateEmbeddings(
+                        List.of(question), "question"
+                );
 
-     // 3️⃣ Récupération du contexte depuis Pinecone (ROBUSTE)
-StringBuilder retrievedContext = new StringBuilder();
+        @SuppressWarnings("unchecked")
+        double[] queryVector = ((List<Double>) embeddings.get(0).get("values"))
+                .stream()
+                .mapToDouble(Double::doubleValue)
+                .toArray();
 
-if (searchResult != null && searchResult.has("matches")) {
-    for (JsonNode match : searchResult.get("matches")) {
 
-        JsonNode metadata = match.get("metadata");
-        if (metadata == null) continue;
+        /* =============================
+           2️⃣ RECHERCHE DANS PINECONE
+           ============================= */
 
-        JsonNode contentNode = metadata.get("content");
-        if (contentNode == null || contentNode.asText().isBlank()) continue;
+        JsonNode searchResult = pineconeStore.query(queryVector, topK);
 
-        retrievedContext.append(contentNode.asText()).append("\n");
+
+        /* =============================
+           3️⃣ CONSTRUCTION DU CONTEXTE
+           ============================= */
+
+        StringBuilder retrievedContext = new StringBuilder();
+
+        if (searchResult != null && searchResult.has("matches")) {
+            for (JsonNode match : searchResult.get("matches")) {
+
+                JsonNode metadata = match.get("metadata");
+                if (metadata == null) continue;
+
+                JsonNode contentNode = metadata.get("content");
+                if (contentNode == null || contentNode.asText().isBlank()) continue;
+
+                retrievedContext
+                        .append(contentNode.asText())
+                        .append("\n");
+            }
+        }
+
+
+        /* =============================
+           4️⃣ PROMPT FINAL
+           ============================= */
+
+        String prompt = systemPrompt.buildPrompt(
+                question,
+                retrievedContext.toString()
+        );
+
+
+        /* =============================
+           5️⃣ APPEL OLLAMA (stream:false)
+           ============================= */
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("model", "phi2-local:latest");
+        payload.put("prompt", prompt);
+        payload.put("stream", false); // important pour réponse complète
+
+        String jsonPayload = objectMapper.writeValueAsString(payload);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/generate"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
+
+        HttpResponse<String> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+
+        /* =============================
+           6️⃣ LECTURE DE LA RÉPONSE
+           ============================= */
+
+        JsonNode responseJson = objectMapper.readTree(response.body());
+
+        // LOG DEBUG (à retirer en prod)
+        System.out.println("📦 Réponse brute Ollama :");
+        System.out.println(responseJson.toPrettyString());
+
+        JsonNode responseNode = responseJson.path("response");
+
+        if (responseNode.isMissingNode() || responseNode.asText().isBlank()) {
+            throw new IllegalStateException(
+                    "Réponse Ollama invalide : " + responseJson.toPrettyString()
+            );
+        }
+
+        return responseNode.asText().trim();
     }
 }
-
-
-    // 4️⃣ Construction du prompt
-    String prompt = systemPrompt.buildPrompt(question, retrievedContext.toString());
-
-    // 5️⃣ Préparation payload Ollama avec stream:false
-    Map<String, Object> payload = new HashMap<>();
-    payload.put("model", "phi2-local:latest");
-    payload.put("prompt", prompt);
-    payload.put("max_tokens", 200);
-    payload.put("stream", false); // ✅ clé importante pour obtenir la réponse complète
-
-    String jsonPayload = objectMapper.writeValueAsString(payload);
-
-    HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(MedicalEmbeddingsPipeline.getOllamaBaseUrl() + "/api/generate"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
-            .build();
-
-    HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-JsonNode responseJson = objectMapper.readTree(response.body());
-
-// 🔥 LOG DE SÉCURITÉ (temporaire mais crucial)
-System.out.println("📦 Réponse brute Ollama :");
-System.out.println(responseJson.toPrettyString());
-
-// ✅ EXTRACTION CORRECTE POUR OLLAMA
-JsonNode responseNode = responseJson.get("response");
-
-if (responseNode == null || responseNode.asText().isBlank()) {
-    throw new IllegalStateException(
-        "Réponse Ollama invalide ou vide : " + responseJson.toPrettyString()
-    );
-}
-
-return responseNode.asText().trim();
-
-
-}
-
-}
-
-
-

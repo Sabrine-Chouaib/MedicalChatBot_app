@@ -24,8 +24,7 @@ public class MedicalEmbeddingsPipeline {
        ========================= */
 
     // ✅ Endpoint natif Ollama
-    private static String ollamaBaseUrl =
-            "http://localhost:11434/api/embeddings";
+    private static String ollamaBaseUrl ;
 
     // Dimension attendue des embeddings
     private static final int EMBED_DIM = 768;
