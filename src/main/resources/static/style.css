@@ -1,0 +1,239 @@
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #f4f6f9;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+}
+
+.chat-container {
+    width: 450px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+
+.header {
+    padding: 15px;
+    background: #0b5ed7;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+}
+
+#chat-box {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.message {
+    max-width: 85%;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.user {
+    background: #dbeafe;
+    align-self: flex-end;
+}
+
+.bot {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    align-self: flex-start;
+}
+
+.input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+
+input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+button {
+    margin-left: 8px;
+    padding: 10px 15px;
+    background: #0b5ed7;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.typing {
+    font-style: italic;
+    color: #666;
+}
+
+
+.message.bot {
+  background: #f4f8fb;
+  border-left: 4px solid #2c7be5;
+  padding: 14px;
+  border-radius: 10px;
+  max-width: 75%;
+  line-height: 1.6;
+}
+
+.message.bot h3 {
+  color: #1f3c88;
+}
+
+.message.bot ul {
+  padding-left: 20px;
+}
+
+
+:root {
+  --primary: #0b5ed7;
+  --bg: #f4f7fb;
+  --bot: #eef3ff;
+  --user: #0b5ed7;
+  --text-dark: #1f2937;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+}
+
+.chat-container {
+  width: 420px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* Header - style médical moderne */
+.chat-header {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4); /* bleu vif vers turquoise apaisant */
+  color: white;
+  padding: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid #0284c7; /* petite bordure pour structure */
+  border-radius: 8px 8px 0 0; /* coins arrondis en haut pour un effet moderne */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* léger effet de profondeur */
+}
+
+
+/* Messages */
+.chat-box {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.message {
+  max-width: 85%;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.message.user {
+  background: var(--user);
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.message.bot {
+  background: var(--bot);
+  color: var(--text-dark);
+  border-bottom-left-radius: 4px;
+}
+
+/* Typing */
+.typing {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Input */
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid #d1d5db;
+  outline: none;
+}
+
+.chat-input button {
+  background: var(--primary);
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+
+
+.welcome {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #1f2937;
+  padding: 20px;
+}
+
+.welcome-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.welcome h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.welcome p {
+  font-size: 14.5px;
+  color: #4b5563;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.welcome .hint {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #0b5ed7;
+  background: #eef3ff;
+  padding: 6px 12px;
+  border-radius: 12px;
+}

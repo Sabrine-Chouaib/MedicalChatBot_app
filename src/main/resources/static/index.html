@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Médical Intelligent</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chat-container">
+
+  <div class="chat-header">
+    🩺 Assistant Médical Intelligent
+  </div>
+
+  <div id="chat-box" class="chat-box">
+
+  <div class="welcome">
+    <div class="welcome-icon">🩺</div>
+
+    <h2>Assistant Médical Intelligent</h2>
+
+    <p>
+      Je suis votre assistant médical basé sur l’intelligence artificielle.<br>
+      Posez votre question pour obtenir une réponse claire et fiable.
+    </p>
+
+    
+  </div>
+
+</div>
+
+
+  <div class="chat-input">
+    <input id="question"
+           placeholder="Posez votre question médicale..."
+           onkeydown="handleEnter(event)">
+    <button onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+
+<script src="marked.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

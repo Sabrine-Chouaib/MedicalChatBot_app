@@ -47,6 +47,7 @@ public class FullPipelineRagWithLLMIT {
     public void testFullPipelineRagWithLLM() throws Exception {
 
         System.out.println("==== DÉBUT PIPELINE COMPLET RAG + LLM ====");
+        MedicalEmbeddingsPipeline.setOllamaBaseUrl("http://localhost:11434/api/embeddings");
 
         /* 1️⃣ Extraction du texte PDF */
         PDFTextExtractor extractor = new PDFTextExtractor();

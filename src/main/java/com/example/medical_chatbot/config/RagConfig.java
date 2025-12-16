@@ -17,8 +17,11 @@ public class RagConfig {
     @Value("${pinecone.host}")
     private String pineconeHost;
 
-    @Value("${ollama.url}")
-    private String ollamaUrl;
+    @Value("${ollama.base-url}")
+    private String ollamaBaseUrl;
+
+    @Value("${ollama.embeddings-path}")
+    private String embeddingsPath;
 
     @Bean
     public PineconeStore pineconeStore() {
@@ -38,7 +41,10 @@ public class RagConfig {
             PineconeStore pineconeStore,
             SystemPrompt systemPrompt
     ) {
-        MedicalEmbeddingsPipeline.setOllamaBaseUrl(ollamaUrl);
+         // ✅ URL COMPLÈTE pour embeddings
+        MedicalEmbeddingsPipeline.setOllamaBaseUrl(
+                ollamaBaseUrl + embeddingsPath
+        );
         // 🔥 Injecter aussi l’URL Ollama si besoin plus tard
         return new RagServiceLLM(pineconeStore, systemPrompt);
     }
