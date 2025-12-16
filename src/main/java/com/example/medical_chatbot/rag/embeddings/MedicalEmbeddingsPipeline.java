@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.uuid.Generators;
-
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -13,25 +13,24 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import java.io.IOException;
 import java.util.*;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+
 /**
  * Pipeline de génération d'embeddings médicaux via Ollama
- * Utilisé dans le cadre du RAG (Retrieval Augmented Generation)
+ * Avec Distributed Tracing Jaeger
  */
 public class MedicalEmbeddingsPipeline {
+
 
     /* =========================
        🔧 CONFIGURATION OLLAMA
        ========================= */
 
-    // ✅ Endpoint natif Ollama
-    private static String ollamaBaseUrl ;
-
-    // Dimension attendue des embeddings
+    private static String ollamaBaseUrl;
     private static final int EMBED_DIM = 768;
-
-    // Mapper JSON partagé
     private static final ObjectMapper mapper = new ObjectMapper();
-
 
     /* =========================
        🔁 GETTERS / SETTERS
@@ -41,23 +40,20 @@ public class MedicalEmbeddingsPipeline {
         ollamaBaseUrl = url;
     }
 
-    // 🔹 Utilisé par RagServiceLLM
     public static String getOllamaBaseUrl() {
         return ollamaBaseUrl;
     }
 
+    /* =========================
+       🧠 TRACER OPEN TELEMETRY
+       ========================= */
+
+    private static final Tracer tracer = GlobalOpenTelemetry.getTracer("medical-chatbot");
 
     /* =========================
        🧠 PIPELINE EMBEDDINGS
        ========================= */
-
-    /**
-     * Génère les embeddings pour une liste de chunks médicaux
-     *
-     * @param chunks Liste de chunks textuels
-     * @param source Source du document (PDF, OCR, etc.)
-     * @return Liste de vecteurs prêts pour Pinecone
-     */
+    @WithSpan("Génération embeddings Ollama")
     public static List<Map<String, Object>> generateEmbeddings(
             List<String> chunks,
             String source
@@ -66,75 +62,70 @@ public class MedicalEmbeddingsPipeline {
         List<Map<String, Object>> embeddingsList = new ArrayList<>();
 
         for (String chunkText : chunks) {
+            // Span pour chaque chunk
+            Span chunkSpan = tracer.spanBuilder("embedding-chunk").startSpan();
+            chunkSpan.setAttribute("chunk.length", chunkText.length());
+            try {
+                List<Double> embedding = callOllamaEmbedding(chunkText);
 
-            /* 1️⃣ Appel Ollama pour UN chunk */
-            List<Double> embedding = callOllamaEmbedding(chunkText);
+                if (embedding.size() != EMBED_DIM) {
+                    throw new RuntimeException(
+                            "Dimension embedding incorrecte : " + embedding.size()
+                    );
+                }
 
-            if (embedding.size() != EMBED_DIM) {
-                throw new RuntimeException(
-                        "Dimension embedding incorrecte : " + embedding.size()
-                );
+                UUID id = Generators.nameBasedGenerator(
+                        UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+                ).generate(chunkText);
+
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("content", chunkText);
+                metadata.put("length", chunkText.length());
+                metadata.put("source", source);
+
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("id", id.toString());
+                entry.put("values", embedding);
+                entry.put("metadata", metadata);
+
+                embeddingsList.add(entry);
+            } finally {
+                chunkSpan.end();
             }
-
-            /* 2️⃣ Génération UUID déterministe (basé sur le contenu) */
-            UUID id = Generators.nameBasedGenerator(
-                    UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-            ).generate(chunkText);
-
-            /* 3️⃣ Métadonnées */
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("content", chunkText);     // 🔴 TEXTE DU CHUNK (OBLIGATOIRE)
-            metadata.put("length", chunkText.length());
-            metadata.put("source", source);
-
-            /* 4️⃣ Entrée finale Pinecone */
-            Map<String, Object> entry = new HashMap<>();
-            entry.put("id", id.toString());
-            entry.put("values", embedding);
-            entry.put("metadata", metadata);
-
-            embeddingsList.add(entry);
         }
 
         return embeddingsList;
     }
 
-
     /* =========================
-       🌐 APPEL API OLLAMA
+       🌐 APPEL API OLLAMA AVEC TRACING
        ========================= */
 
-    /**
-     * Appel à l'API Ollama (/api/embeddings) pour un seul chunk
-     *
-     * @param text Texte à encoder
-     * @return Vecteur d'embedding
-     */
     private static List<Double> callOllamaEmbedding(String text) throws IOException {
+
+        // Span spécifique pour l'appel HTTP
+        Span httpSpan = tracer.spanBuilder("ollama-http-call").startSpan();
+        httpSpan.setAttribute("text.length", text != null ? text.length() : 0);
 
         try (CloseableHttpClient client = HttpClients.createDefault()) {
 
             HttpPost post = new HttpPost(ollamaBaseUrl);
             post.setHeader("Content-Type", "application/json");
 
-            // ✅ Format requis par Ollama
             ObjectNode payload = mapper.createObjectNode();
             payload.put("model", "nomic-embed-text");
             payload.put("prompt", text);
-
             post.setEntity(new StringEntity(payload.toString()));
 
             return client.execute(post, response -> {
-
                 int status = response.getCode();
                 String responseBody =
                         new String(response.getEntity().getContent().readAllBytes());
 
-                // 🔒 Gestion erreurs HTTP
                 if (status != 200) {
                     throw new RuntimeException(
                             "Ollama HTTP error: " + status +
-                            "\nResponse body: " + responseBody
+                                    "\nResponse body: " + responseBody
                     );
                 }
 
@@ -151,9 +142,11 @@ public class MedicalEmbeddingsPipeline {
                 for (JsonNode v : embeddingNode) {
                     vector.add(v.asDouble());
                 }
-
                 return vector;
             });
+
+        } finally {
+            httpSpan.end();
         }
     }
 }

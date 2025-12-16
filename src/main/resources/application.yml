@@ -1,0 +1,7 @@
+# Port Jaeger par défaut
+spring.application.name=medical-chatbot
+  
+  # Configuration Jaeger
+otel.traces.exporter=jaeger
+otel.exporter.jaeger.endpoint=http://localhost:14250
+otel.resource.attributes=service.name=medical-chatbot

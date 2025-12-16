@@ -5,6 +5,7 @@ import com.example.medical_chatbot.rag.prompt.SystemPrompt;
 import com.example.medical_chatbot.rag.vectorstore.PineconeStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -63,6 +64,7 @@ public class RagServiceLLM {
      * @param topK     nombre de chunks à récupérer
      * @return réponse générée par le LLM
      */
+    @WithSpan("LLM Call")
     public String generateAnswerWithLLM(String question, int topK) throws Exception {
 
         /* =============================
@@ -125,7 +127,7 @@ public class RagServiceLLM {
            ============================= */
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("model", "phi2-local:latest");
+        payload.put("model", "phi");
         payload.put("prompt", prompt);
         payload.put("stream", false); // important pour réponse complète
 

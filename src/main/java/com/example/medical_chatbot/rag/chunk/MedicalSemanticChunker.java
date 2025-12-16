@@ -1,5 +1,7 @@
 package com.example.medical_chatbot.rag.chunk;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -19,6 +21,7 @@ public class MedicalSemanticChunker {
     /**
      * Méthode principale
      */
+    @WithSpan("Chunking médical")
     public List<String> chunkMedicalText(String extractedText) {
         List<String> chunks = new ArrayList<>();
         if (extractedText == null || extractedText.isBlank()) return chunks;

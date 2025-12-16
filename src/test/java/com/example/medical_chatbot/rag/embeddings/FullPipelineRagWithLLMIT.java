@@ -7,10 +7,22 @@ import com.example.medical_chatbot.rag.vectorstore.PineconeClient;
 import com.example.medical_chatbot.rag.vectorstore.PineconeStore;
 import com.example.medical_chatbot.service.RagServiceLLM;
 
+import io.opentelemetry.sdk.resources.Resource;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+
+import org.junit.jupiter.api.BeforeAll;
+
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test d'intégration (IT) :
@@ -19,19 +31,49 @@ import java.util.Map;
  * PDF → Extraction → Chunking médical → Embeddings → Pinecone → LLM
  */
 public class FullPipelineRagWithLLMIT {
+    @BeforeAll
+    static void initTracing() {
+        // Exporter OTLP vers Jaeger via gRPC (port 4317)
+        OtlpGrpcSpanExporter exporter = OtlpGrpcSpanExporter.builder()
+                .setEndpoint("http://localhost:4317") // gRPC endpoint
+                .build();
+
+        // Configuration du BatchSpanProcessor avec des limites
+        BatchSpanProcessor spanProcessor = BatchSpanProcessor.builder(exporter)
+                .setMaxExportBatchSize(128)      // nombre max de spans envoyés en une fois
+                .setMaxQueueSize(2048)           // taille max de la file d’attente
+                .setScheduleDelay(java.time.Duration.ofMillis(500)) // délai entre exports
+                .build();
+
+        // Définir le nom du service pour Jaeger
+        Resource resource = Resource.getDefault().toBuilder()
+                .put("service.name", "medical-chatbot")
+                .build();
+
+        // Tracer provider avec resource + span processor
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(spanProcessor)
+                .setResource(resource)
+                .build();
+
+        // Registre global
+        OpenTelemetrySdk openTelemetry = OpenTelemetrySdk.builder()
+                .setTracerProvider(tracerProvider)
+                .buildAndRegisterGlobal();
+    }
 
     /* =========================
        🔧 CONFIGURATION GLOBALE
        ========================= */
 
     private static final String PDF_PATH =
-            "C:\\Users\\user\\Documents\\medical-chatbot\\data\\fiche-prevention-clinique-04.pdf";
+            "C:\\Users\\sabre\\OllamaProject\\MedicalChatBot_app\\data\\fiche-prevention-clinique-04.pdf";
 
     private static final String PINECONE_API_KEY =
-            "pcsk_2dpnua_DzrGwtVy5ScmuRB2ZKWyKEXnvJQq835YxCzvGvws7uKJVFT2V7BFqX3fjM8L7io";
+            "pcsk_4wArr8_6a1LrjJDZbsmksMzNZDkFpnBrs2gss918tgexyyvQgQSW1aUVGqStvYCdUSqiLg";
 
     private static final String PINECONE_HOST =
-            "https://medical-chatbot-ollama-ndr6ggc.svc.aped-4627-b74a.pinecone.io";
+            "https://chatbot-y4ojuuz.svc.aped-4627-b74a.pinecone.io";
 
     private static final int TOP_K = 3;
 
@@ -47,7 +89,7 @@ public class FullPipelineRagWithLLMIT {
     public void testFullPipelineRagWithLLM() throws Exception {
 
         System.out.println("==== DÉBUT PIPELINE COMPLET RAG + LLM ====");
-
+        MedicalEmbeddingsPipeline.setOllamaBaseUrl("http://localhost:11434/api/embeddings");
         /* 1️⃣ Extraction du texte PDF */
         PDFTextExtractor extractor = new PDFTextExtractor();
         String extractedText = extractor.extractText(PDF_PATH);
