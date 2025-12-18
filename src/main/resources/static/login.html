@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Medical Chatbot | Login</title>
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+<div class="container">
+    <img src="https://cdn-icons-png.flaticon.com/512/387/387561.png" alt="medical">
+    <h2>Medical Chatbot</h2>
+
+    <div class="input-group">
+        <label>Nom d'utilisateur</label>
+        <input type="text" id="login-username">
+    </div>
+
+    <div class="input-group">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password">
+    </div>
+
+    <button onclick="login()">Se connecter</button>
+
+    <div class="error" id="login-error"></div>
+
+    <div class="link">
+        Pas de compte ? <a href="register.html">Créer un compte</a>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: medical_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: medical
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ENISO1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: medical_backend
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/medical
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ENISO1234
+      JWT_SECRET: SyQcHSP+0Yurz5ZEbc3DpY1LNZXGp4nWvgjFu/9/Ta0=
+      JWT_EXPIRATION: 3600000
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      PINECONE_HOST: https://chatmedical-wul4dtz.svc.aped-4627-b74a.pinecone.io
+      PINECONE_INDEX: medical-chatbot-ollama
+      LLM_API_URL: http://ollama:11434
+    depends_on:
+      - postgres
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    container_name: medical_ollama
+    ports:
+      - "11434:11434"
+    restart: always
+    environment:
+      OLLAMA_ORIGINS: "*"
+    volumes:
+      # Monte ton dossier local Windows où les modèles sont déjà téléchargés
+      - C:/Users/Espace_info/.ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

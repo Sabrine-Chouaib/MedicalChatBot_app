@@ -15,7 +15,7 @@ class PDFTextExtractorIT {
         PDFTextExtractor extractor = new PDFTextExtractor();
 
         String pdfPath = Paths.get(
-                "C:\\Users\\user\\Documents\\medical-chatbot\\data\\fiche-prevention-clinique-04.pdf"
+                "C:\\Users\\Espace_info\\Documents\\3éme ing\\MedicalChatBot_app\\data\\fiche-prevention-clinique-04.pdf"
         ).toString();
 
         String text = extractor.extractText(pdfPath);

@@ -8,11 +8,17 @@ async function sendMessage() {
 
     const botMsg = addMessage("⏳ L'assistant rédige...", "bot", true);
 
+    const token = localStorage.getItem("token");
+
     const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question, k: 3})
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ question, k: 3 })
     });
+
 
     const data = await response.json();
 

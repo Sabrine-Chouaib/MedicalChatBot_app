@@ -25,13 +25,13 @@ public class FullPipelineRagWithLLMIT {
        ========================= */
 
     private static final String PDF_PATH =
-            "C:\\Users\\user\\Documents\\medical-chatbot\\data\\fiche-prevention-clinique-04.pdf";
+            "C:\\Users\\Espace_info\\Documents\\3éme ing\\MedicalChatBot_app\\data\\fiche-prevention-clinique-04.pdf";
 
     private static final String PINECONE_API_KEY =
-            "pcsk_2dpnua_DzrGwtVy5ScmuRB2ZKWyKEXnvJQq835YxCzvGvws7uKJVFT2V7BFqX3fjM8L7io";
+            "pcsk_266Dkj_LszAzp82FBuSk7waNwmnhwM6UYRqASrZn63wUx5uB2kyAfLLYV4hjHZw4u5YMKW";
 
     private static final String PINECONE_HOST =
-            "https://medical-chatbot-ollama-ndr6ggc.svc.aped-4627-b74a.pinecone.io";
+            "https://medical-chatbot-wul4dtz.svc.aped-4627-b74a.pinecone.io";
 
     private static final int TOP_K = 3;
 

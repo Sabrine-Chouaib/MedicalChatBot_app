@@ -4,8 +4,8 @@
 # ===============================
 
 # Variables Pinecone
-PINECONE_API_KEY="pcsk_2dpnua_DzrGwtVy5ScmuRB2ZKWyKEXnvJQq835YxCzvGvws7uKJVFT2V7BFqX3fjM8L7io"
-PINECONE_HOST="https://medical-chatbot-ollama-ndr6ggc.svc.aped-4627-b74a.pinecone.io"
+PINECONE_API_KEY="pcsk_266Dkj_LszAzp82FBuSk7waNwmnhwM6UYRqASrZn63wUx5uB2kyAfLLYV4hjHZw4u5YMKW"
+PINECONE_HOST="https://chatmedical-wul4dtz.svc.aped-4627-b74a.pinecone.io"
 
 # 1️⃣ Générer un vecteur aléatoire de 768 dimensions
 VECTOR=$(for i in $(seq 1 768); do 

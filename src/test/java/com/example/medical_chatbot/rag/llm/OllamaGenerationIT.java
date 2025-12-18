@@ -21,7 +21,7 @@ public class OllamaGenerationIT {
         ObjectMapper mapper = new ObjectMapper();
 
         Map<String, Object> payload = Map.of(
-                "model", "phi2-local:latest",
+                "model", "tinyllama:latest",
                 "prompt", "Bonjour, réponds en une phrase.",
                 "stream", false
         );

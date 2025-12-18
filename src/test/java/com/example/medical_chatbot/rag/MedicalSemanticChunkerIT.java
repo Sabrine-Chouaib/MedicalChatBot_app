@@ -18,7 +18,7 @@ class MedicalSemanticChunkerIT {
         MedicalSemanticChunker chunker = new MedicalSemanticChunker();
 
         String pdfPath = Paths.get(
-                "C:\\Users\\user\\Documents\\medical-chatbot\\data\\fiche-prevention-clinique-04.pdf"
+                "C:\\Users\\Espace_info\\Documents\\3éme ing\\MedicalChatBot_app\\fiche-prevention-clinique-04.pdf"
         ).toString();
 
         // 1️⃣ Extraction
