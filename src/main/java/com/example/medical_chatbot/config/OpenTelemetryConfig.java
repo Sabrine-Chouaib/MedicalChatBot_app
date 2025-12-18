@@ -2,14 +2,11 @@ package com.example.medical_chatbot.config;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
-
-import static io.opentelemetry.semconv.ResourceAttributes.SERVICE_NAME;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,24 +15,18 @@ public class OpenTelemetryConfig {
 
     @Bean
     public OpenTelemetry openTelemetry() {
+        OtlpGrpcSpanExporter exporter = OtlpGrpcSpanExporter.builder()
+                .setEndpoint("http://localhost:4317") // Jaeger OTLP gRPC
+                .build();
 
-        OtlpGrpcSpanExporter exporter =
-                OtlpGrpcSpanExporter.builder()
-                        .setEndpoint("http://localhost:4317")
-                        .build();
-
-        Resource resource = Resource.getDefault()
-                .toBuilder()
+        Resource resource = Resource.getDefault().toBuilder()
                 .put("service.name", "medical-chatbot")
                 .build();
 
-        SdkTracerProvider tracerProvider =
-                SdkTracerProvider.builder()
-                        .setResource(resource)
-                        .addSpanProcessor(
-                                BatchSpanProcessor.builder(exporter).build()
-                        )
-                        .build();
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .setResource(resource)
+                .addSpanProcessor(BatchSpanProcessor.builder(exporter).build())
+                .build();
 
         return OpenTelemetrySdk.builder()
                 .setTracerProvider(tracerProvider)
@@ -47,4 +38,3 @@ public class OpenTelemetryConfig {
         return openTelemetry.getTracer("medical-chatbot-tracer");
     }
 }
-

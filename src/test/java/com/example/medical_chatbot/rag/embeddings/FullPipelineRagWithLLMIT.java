@@ -25,13 +25,13 @@ public class FullPipelineRagWithLLMIT {
        ========================= */
 
     private static final String PDF_PATH =
-            "C:\\Users\\user\\Documents\\medical-chatbot\\data\\fiche-prevention-clinique-04.pdf";
+            "C:\\Users\\sabre\\OneDrive\\bureau\\projet-final\\MedicalChatBot_app\\data\\fiche-prevention-clinique-04.pdf";
 
     private static final String PINECONE_API_KEY =
-            "pcsk_2dpnua_DzrGwtVy5ScmuRB2ZKWyKEXnvJQq835YxCzvGvws7uKJVFT2V7BFqX3fjM8L7io";
+            "pcsk_4wArr8_6a1LrjJDZbsmksMzNZDkFpnBrs2gss918tgexyyvQgQSW1aUVGqStvYCdUSqiLg";
 
     private static final String PINECONE_HOST =
-            "https://medical-chatbot-ollama-ndr6ggc.svc.aped-4627-b74a.pinecone.io";
+            "https://chatbot-y4ojuuz.svc.aped-4627-b74a.pinecone.io";
 
     private static final int TOP_K = 3;
 
@@ -56,7 +56,6 @@ public class FullPipelineRagWithLLMIT {
         System.out.println("✅ Extraction PDF terminée");
         System.out.println("   → Taille du texte : " + extractedText.length());
 
-
         /* 2️⃣ Chunking sémantique médical */
         MedicalSemanticChunker chunker = new MedicalSemanticChunker();
         List<String> chunks = chunker.chunkMedicalText(extractedText);
@@ -64,14 +63,12 @@ public class FullPipelineRagWithLLMIT {
         System.out.println("✅ Chunking médical terminé");
         System.out.println("   → Nombre de chunks : " + chunks.size());
 
-
         /* 3️⃣ Génération des embeddings (Ollama) */
         List<Map<String, Object>> embeddings =
                 MedicalEmbeddingsPipeline.generateEmbeddings(chunks, PDF_PATH);
 
         System.out.println("✅ Embeddings générés");
         System.out.println("   → Nombre de vecteurs : " + embeddings.size());
-
 
         /* 4️⃣ Upsert des embeddings dans Pinecone */
         PineconeClient pineconeClient =
@@ -81,22 +78,28 @@ public class FullPipelineRagWithLLMIT {
 
         System.out.println("✅ Upsert Pinecone réussi");
 
-
         /* 5️⃣ Initialisation du service RAG + LLM */
-        PineconeStore pineconeStore =
-                new PineconeStore(PINECONE_API_KEY, PINECONE_HOST);
-
+        PineconeStore pineconeStore = new PineconeStore(PINECONE_API_KEY, PINECONE_HOST);
         SystemPrompt systemPrompt = new SystemPrompt();
 
-        RagServiceLLM ragServiceLLM =
-                new RagServiceLLM(pineconeStore, systemPrompt);
+        // Ajout des dépendances manquantes
+        io.opentelemetry.api.trace.Tracer tracer = io.opentelemetry.api.GlobalOpenTelemetry.getTracer("test");
+        com.example.medical_chatbot.rag.chunk.TextChunker textChunker = new com.example.medical_chatbot.rag.chunk.TextChunker();
+        com.example.medical_chatbot.rag.pdf.PDFChunker pdfChunker = new com.example.medical_chatbot.rag.pdf.PDFChunker(textChunker);
 
+        RagServiceLLM ragServiceLLM = new RagServiceLLM(
+                tracer,
+                extractor,
+                pdfChunker,
+                pineconeStore,
+                systemPrompt,
+                chunker,
+                textChunker
+        );
 
         /* 6️⃣ Génération de la réponse avec le LLM */
-        String answer =
-                ragServiceLLM.generateAnswerWithLLM(QUESTION, TOP_K);
+        String answer = ragServiceLLM.generateAnswerWithLLM(QUESTION, TOP_K);
 
-        // 🔒 Vérification de sécurité
         if (answer == null || answer.isBlank()) {
             throw new IllegalStateException("❌ Réponse LLM vide !");
         }
@@ -108,4 +111,5 @@ public class FullPipelineRagWithLLMIT {
 
         System.out.println("==== FIN PIPELINE COMPLET RAG + LLM ====");
     }
+
 }

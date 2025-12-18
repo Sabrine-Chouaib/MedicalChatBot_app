@@ -5,6 +5,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
+import org.springframework.stereotype.Component;
 
 import java.awt.Rectangle;
 import java.io.File;
@@ -13,6 +14,7 @@ import java.io.IOException;
 /**
  * Extraction PDF HAUTE QUALITÉ pour RAG médical
  */
+@Component
 public class PDFTextExtractor {
 
     public String extractText(String pdfPath) throws IOException {

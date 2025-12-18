@@ -1,5 +1,7 @@
 package com.example.medical_chatbot.rag.chunk;
 
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -11,6 +13,7 @@ import java.util.regex.Pattern;
  * - Préserve contexte
  * - Taille safe pour embeddings Ollama
  */
+@Component
 public class MedicalSemanticChunker {
 
     // Taille max safe pour embeddings
