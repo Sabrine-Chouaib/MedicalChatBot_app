@@ -21,7 +21,7 @@ public class OllamaGenerationIT {
         ObjectMapper mapper = new ObjectMapper();
 
         Map<String, Object> payload = Map.of(
-                "model", "tinyllama:latest",
+                "model", "phi2-local:latestt",
                 "prompt", "Bonjour, réponds en une phrase.",
                 "stream", false
         );
@@ -41,7 +41,7 @@ public class OllamaGenerationIT {
 
         JsonNode body = mapper.readTree(response.body());
 
-        System.out.println("📦 Ollama response:");
+        System.out.println(" Ollama response:");
         System.out.println(body.toPrettyString());
 
         assertTrue(body.has("response"));

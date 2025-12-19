@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: medical-chatbot
+
+otel:
+  traces:
+    exporter: otlp
+  exporter:
+    otlp:
+      endpoint: http://jaeger-medical:4317
+      protocol: grpc
+  resource:
+    attributes:
+      service.name: medical-chatbot

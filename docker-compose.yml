@@ -1,6 +1,15 @@
 version: "3.9"
 
 services:
+  jaeger-medical:
+    image: jaegertracing/all-in-one:1.55
+    container_name: jaeger-medical
+    ports:
+      - "16686:16686"   # UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
   postgres:
     image: postgres:17
     container_name: medical_postgres
@@ -20,6 +29,8 @@ services:
     restart: always
     ports:
       - "8081:8081"
+    volumes:
+      - ./data:/app/data
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/medical
       SPRING_DATASOURCE_USERNAME: postgres
@@ -44,7 +55,7 @@ services:
       OLLAMA_ORIGINS: "*"
     volumes:
       # Monte ton dossier local Windows où les modèles sont déjà téléchargés
-      - C:/Users/Espace_info/.ollama:/root/.ollama
+      - C:/Users/user/.ollama:/root/.ollama
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
